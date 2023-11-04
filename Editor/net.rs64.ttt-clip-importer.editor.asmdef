@@ -1,0 +1,17 @@
+{
+    "name": "net.rs64.ttt-clip-importer.editor",
+    "references": [
+        "GUID:714415f88c976294bae3b39a55cfd883",
+        "GUID:5f92e09816a7a684ba6f0faab465c186",
+        "GUID:618d91fef8c36af4a9e25c1697c0c57a"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
