@@ -99,4 +99,41 @@ namespace net.rs64.TexTransTool.ClipParser
         [Column("LayerColorTypeBlackChecked")] public long LayerColorTypeBlackChecked { get; set; }
         [Column("LayerColorTypeWhiteChecked")] public long LayerColorTypeWhiteChecked { get; set; }
     }
+
+    [Table("Offscreen")]
+    internal class OffscreenRecord : IOffscreenRecord
+    {
+        [Column("_PW_ID")] public long PwId { get; set; }
+        [Column("MainId")] public long MainId { get; set; }
+        [Column("CanvasId")] public long CanvasId { get; set; }
+        [Column("LayerId")] public long LayerId { get; set; }
+        [Column("Attribute")] public byte[] Attribute { get; set; }
+        [Column("BlockData")] public byte[] BlockData { get; set; }
+    }
+
+    [Table("Mipmap")]
+    internal class MipmapRecord : IMipmapRecord
+    {
+        [Column("_PW_ID")] public long PwId { get; set; }
+        [Column("MainId")] public long MainId { get; set; }
+        [Column("CanvasId")] public long CanvasId { get; set; }
+        [Column("LayerId")] public long LayerId { get; set; }
+        [Column("MipmapCount")] public long MipmapCount { get; set; }
+        [Column("BaseMipmapInfo")] public long BaseMipmapInfo { get; set; }
+
+    }
+
+
+    [Table("MipmapInfo")]
+    internal class MipmapInfoRecord : IMipmapInfoRecord
+    {
+        [Column("_PW_ID")] public long PwId { get; set; }
+        [Column("MainId")] public long MainId { get; set; }
+        [Column("CanvasId")] public long CanvasId { get; set; }
+        [Column("LayerId")] public long LayerId { get; set; }
+        [Column("ThisScale")] public double ThisScale { get; set; }
+        [Column("Offscreen")] public long Offscreen { get; set; }
+        [Column("NextIndex")] public long NextIndex { get; set; }
+
+    }
 }

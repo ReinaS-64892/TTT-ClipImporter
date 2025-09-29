@@ -1,20 +1,20 @@
 {
-    "name": "net.rs64.ttt-clip-importer.editor",
+    "name": "net.rs64.ttt-clip-importer.runtime",
     "rootNamespace": "",
     "references": [
-        "net.rs64.multi-layer-image-data",
-        "net.rs64.tex-trans-tool.editor",
+        "net.rs64.tex-trans-core",
         "net.rs64.tex-trans-tool.runtime",
-        "net.rs64.clip-parser",
-        "net.rs64.ttt-clip-importer.runtime",
-        "Gilzoide.SqliteNet"
+        "net.rs64.parser-utility",
+        "net.rs64.clip-parser"
     ],
-    "includePlatforms": [],
+    "includePlatforms": [
+        "Editor"
+    ],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,
     "precompiledReferences": [],
-    "autoReferenced": true,
+    "autoReferenced": false,
     "defineConstraints": [],
     "versionDefines": [],
     "noEngineReferences": false

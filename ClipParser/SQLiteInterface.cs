@@ -17,6 +17,10 @@ namespace net.rs64.TexTransTool.ClipParser
     {
         List<ICanvasRecord> QueryCanvas();
         List<ILayerRecord> QueryLayer();
+        List<IOffscreenRecord> QueryOffscreen();
+        List<IMipmapRecord> QueryMipMap();
+        List<IMipmapInfoRecord> QueryMipMapInfo();
+
     }
     public interface ICanvasRecord
     {
@@ -111,4 +115,34 @@ namespace net.rs64.TexTransTool.ClipParser
         long LayerColorTypeBlackChecked { get; set; }
         long LayerColorTypeWhiteChecked { get; set; }
     }
+    public interface IOffscreenRecord
+    {
+        long PwId { get; set; }
+        long MainId { get; set; }
+        long CanvasId { get; set; }
+        long LayerId { get; set; }
+        byte[] Attribute { get; set; }
+        byte[] BlockData { get; set; }
+    }
+
+    public interface IMipmapRecord
+    {
+        long PwId { get; set; }
+        long MainId { get; set; }
+        long CanvasId { get; set; }
+        long LayerId { get; set; }
+        long MipmapCount { get; set; }
+        long BaseMipmapInfo { get; set; }
+    }
+    public interface IMipmapInfoRecord
+    {
+        long PwId { get; set; }
+        long MainId { get; set; }
+        long CanvasId { get; set; }
+        long LayerId { get; set; }
+        double ThisScale { get; set; }
+        long Offscreen { get; set; }
+        long NextIndex { get; set; }
+    }
+
 }

@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -39,15 +40,12 @@ namespace net.rs64.TexTransTool.ClipImporter
                 ctx.AddObjectToAsset("RootCanvas", rootCanvas);
                 ctx.SetMainObject(rootCanvas);
 
-                var canvasDescription = default(TTTImportedCanvasDescription);
-                // var canvasDescription = ScriptableObject.CreateInstance<PSDImportedCanvasDescription>();
-                // canvasDescription.Width = pSDData.Width;
-                // canvasDescription.Height = pSDData.Height;
-                // canvasDescription.BitDepth = pSDData.Depth;
-                // canvasDescription.IsPSB = lowPSDData.IsPSB;
-                // canvasDescription.name = "CanvasDescription";
-                // ctx.AddObjectToAsset(canvasDescription.name, canvasDescription);
-                // multiLayerImageCanvas.tttImportedCanvasDescription = canvasDescription;
+                var canvasDescription = ScriptableObject.CreateInstance<ClipImportedCanvasDescription>();
+                canvasDescription.Width = canvas.Width;
+                canvasDescription.Height = canvas.Height;
+                canvasDescription.name = "CanvasDescription";
+                ctx.AddObjectToAsset(canvasDescription.name, canvasDescription);
+                multiLayerImageCanvas.tttImportedCanvasDescription = canvasDescription;
 
                 var mliImporter = new MultiLayerImageImporter(multiLayerImageCanvas, canvasDescription, ctx, CreateClipImportedImage);
                 mliImporter.AddLayers(canvas.RootLayers);
@@ -55,9 +53,18 @@ namespace net.rs64.TexTransTool.ClipImporter
             }
         }
 
-        private TTTImportedImage CreateClipImportedImage(ImportRasterImageData importRasterImage)
+        private TTTImportedImage? CreateClipImportedImage(ImportRasterImageData importRasterImage)
         {
-            return null;
+            switch (importRasterImage)
+            {
+                default: return null;
+                case ClipImportedRasterImageData clipImportedRasterImageData:
+                    {
+                        var importedImage = ScriptableObject.CreateInstance<ClipImportedRasterImage>();
+                        importedImage.ExtraData = clipImportedRasterImageData.ExtraData;
+                        return importedImage;
+                    }
+            }
         }
 
         public class UnitySQLiteWrapper : ISQLiteDBConnector
@@ -77,8 +84,12 @@ namespace net.rs64.TexTransTool.ClipImporter
 
                 public List<ICanvasRecord> QueryCanvas() { return sqlDB.Query<CanvasRecord>("SELECT * from Canvas;").OfType<ICanvasRecord>().ToList(); }
                 public List<ILayerRecord> QueryLayer() { return sqlDB.Query<LayerRecord>("SELECT * from Layer;").OfType<ILayerRecord>().ToList(); }
+                public List<IOffscreenRecord> QueryOffscreen() { return sqlDB.Query<OffscreenRecord>("SELECT * from Offscreen;").OfType<IOffscreenRecord>().ToList(); }
+                public List<IMipmapRecord> QueryMipMap() { return sqlDB.Query<MipmapRecord>("SELECT * from Mipmap;").OfType<IMipmapRecord>().ToList(); }
+                public List<IMipmapInfoRecord> QueryMipMapInfo() { return sqlDB.Query<MipmapInfoRecord>("SELECT * from MipmapInfo;").OfType<IMipmapInfoRecord>().ToList(); }
 
                 public void Dispose() { sqlDB.Dispose(); }
+
             }
         }
     }

@@ -221,27 +221,27 @@ namespace net.rs64.TexTransTool.ClipParser
     {
         public int x;
         public int y;
-
-        public Vector2Int(int blockWidth, int blockHeight)
+        public Vector2Int(int x, int y)
         {
-            this.x = blockWidth;
-            this.y = blockHeight;
+            this.x = x;
+            this.y = y;
         }
+
     }
 
     public struct Color32
     {
-        private byte r;
-        private byte g;
-        private byte b;
-        private byte v;
+        public byte R;
+        public byte G;
+        public byte B;
+        public byte A;
 
         public Color32(byte r, byte g, byte b, byte v)
         {
-            this.r = r;
-            this.g = g;
-            this.b = b;
-            this.v = v;
+            this.R = r;
+            this.G = g;
+            this.B = b;
+            this.A = v;
         }
     }
 }

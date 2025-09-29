@@ -1,7 +1,7 @@
 #nullable enable
-using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using net.rs64.ParserUtility;
 using net.rs64.TexTransTool.MultiLayerImage.LayerData;
 
@@ -17,43 +17,88 @@ namespace net.rs64.TexTransTool.ClipParser
             using var sqlite = dbConnector.Deserialize(sqlite3DBRawBytes);
             var canvas = sqlite.QueryCanvas();
             var layers = sqlite.QueryLayer();
+            var offscreen = sqlite.QueryOffscreen();
+            var mipmap = sqlite.QueryMipMap();
+            var mipmapInfo = sqlite.QueryMipMapInfo();
 
             var canvasData = new List<ClipCanvasData>();
+            var hlCtx = new highLevelParsingContext(layers, offscreen, mipmap, mipmapInfo, lowLevelData.CHNKExtaList);
 
             foreach (var c in canvas)
             {
                 var layersData = new List<AbstractLayerData>();
-                GenerateLayerData(layersData, layers, GetLayer(layers, c.CanvasRootFolder));
+                hlCtx.GenerateLayerData(layersData, hlCtx.GetLayer(c.CanvasRootFolder));
                 canvasData.Add(new(layersData) { Width = (int)c.CanvasWidth, Height = (int)c.CanvasHeight });
             }
 
             return new ClipHighLevelData(canvasData);
 
-            static ILayerRecord GetLayer(List<ILayerRecord> layers, long id)
+
+        }
+        class highLevelParsingContext
+        {
+            List<ILayerRecord> layers;
+            List<IOffscreenRecord> offscreen;
+            List<IMipmapRecord> mipmap;
+            List<IMipmapInfoRecord> mipmapInfo;
+            List<ExtraData> extraData;
+
+            public highLevelParsingContext(List<ILayerRecord> layers, List<IOffscreenRecord> offscreen, List<IMipmapRecord> mipmap, List<IMipmapInfoRecord> mipmapInfo, List<ExtraData> extraData)
+            {
+                this.layers = layers;
+                this.offscreen = offscreen;
+                this.mipmap = mipmap;
+                this.mipmapInfo = mipmapInfo;
+                this.extraData = extraData;
+            }
+            public ILayerRecord GetLayer(long id)
             {
                 return layers.First(l => l.MainId == id);
             }
-            static void GenerateLayerData(List<AbstractLayerData> layersData, List<ILayerRecord> layers, ILayerRecord layer)
+            public void GenerateLayerData(List<AbstractLayerData> layersData, ILayerRecord layer)
             {
                 var nextLayerIndex = layer.LayerFirstChildIndex;
                 while (nextLayerIndex is not 0)
                 {
-                    var cLayer = GetLayer(layers, nextLayerIndex);
+                    var cLayer = GetLayer(nextLayerIndex);
                     if (cLayer.LayerFolder is not 0)
                     {
                         var lf = new LayerFolderData() { Layers = new() };
                         layersData.Add(lf);
 
                         WriteData(lf, cLayer);
-                        GenerateLayerData(lf.Layers, layers, cLayer);
+                        GenerateLayerData(lf.Layers, cLayer);
                     }
                     else
                     {
-                        var l = new EmptyOrUnsupported();
-                        layersData.Add(l);
-                        WriteData(l, cLayer);
+                        var rasterLayerData = new RasterLayerData();
+                        layersData.Add(rasterLayerData);
+                        WriteData(rasterLayerData, cLayer);
+
+                        var layerID = cLayer.MainId;
+                        var canvasID = cLayer.CanvasId;
+                        var offscreenID = GetOffscreenID(layerID, canvasID);
+
+                        if (offscreenID is not null)
+                        {
+                            var offscreenRecord = offscreen.First(o => o.MainId == offscreenID.Value);
+                            var externalId = Encoding.UTF8.GetString(offscreenRecord.BlockData);
+                            var data = extraData.FirstOrDefault(d => d.ExternalID == externalId);
+                            if (data is not null)
+                                rasterLayerData.RasterTexture = new ClipImportedRasterImageData(data);
+                        }
                     }
                     nextLayerIndex = cLayer.LayerNextIndex;
+                }
+
+                long? GetOffscreenID(long layerID, long canvasID)
+                {
+                    var mipMap = mipmap.FirstOrDefault(m => m.CanvasId == canvasID && m.LayerId == layerID);
+                    if (mipMap is null) { return null; }
+                    var mipMapInfo = mipmapInfo.FirstOrDefault(m => m.MainId == mipMap.BaseMipmapInfo);
+                    if (mipMapInfo is null) { return null; }
+                    var offscreenID = mipMapInfo.Offscreen;
+                    return offscreenID;
                 }
             }
         }
