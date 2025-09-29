@@ -2,7 +2,11 @@
     "name": "net.rs64.ttt-clip-importer.editor",
     "rootNamespace": "",
     "references": [
-        "net.rs64.parser-utility"
+        "net.rs64.multi-layer-image-data",
+        "net.rs64.tex-trans-tool.editor",
+        "net.rs64.tex-trans-tool.runtime",
+        "net.rs64.clip-parser",
+        "Gilzoide.SqliteNet"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

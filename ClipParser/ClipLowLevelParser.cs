@@ -1,13 +1,11 @@
-#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Text;
 using net.rs64.ParserUtility;
-using UnityEngine;
 
-namespace net.rs64.MultiLayerImageParser.Clip
+namespace net.rs64.TexTransTool.ClipParser
 {
     public static class ClipLowLevelParser
     {
@@ -18,9 +16,19 @@ namespace net.rs64.MultiLayerImageParser.Clip
 
         // CHNKExta
         static byte[] ExtraDataSignature = new byte[] { 0x43, 0x48, 0x4E, 0x4B, 0x45, 0x78, 0x74, 0x61 };
+
+        // CHNKSQLi
+        static byte[] SQLiteDataSignature = new byte[] { 0x43, 0x48, 0x4E, 0x4B, 0x53, 0x51, 0x4C, 0x69 };
+
+        // CHNKFoot
+        static byte[] FootDataSignature = new byte[] { 0x43, 0x48, 0x4E, 0x4B, 0x46, 0x6F, 0x6F, 0x74 };
         public static ClipLowLevelData Parse(string path)
         {
-            var stream = new BinarySectionStream(File.ReadAllBytes(path));
+            return Parse(File.ReadAllBytes(path));
+        }
+        public static ClipLowLevelData Parse(byte[] bytes)
+        {
+            var stream = new BinarySectionStream(bytes);
             // stream.BigEndian = false;
 
             if (stream.Signature(FileSignature) is false) { throw new Exception(); }
@@ -61,13 +69,13 @@ namespace net.rs64.MultiLayerImageParser.Clip
             }
 
 
-            if (stream.Signature(new byte[] { 0x43, 0x48, 0x4E, 0x4B, 0x53, 0x51, 0x4C, 0x69 }) is false) { throw new Exception(); }
+            if (stream.Signature(SQLiteDataSignature) is false) { throw new Exception(); }
 
             var sQLiteSize = stream.ReadUInt64();
             var sQlLiteData = stream.ReadSubSection((int)sQLiteSize);
-            clipData.SQLiteData = sQlLiteData.ReadToArray();
+            clipData.SQLiteDataAdders = sQlLiteData.ReadToAddress();
 
-            if (stream.Signature(new byte[] { 0x43, 0x48, 0x4E, 0x4B, 0x46, 0x6F, 0x6F, 0x74 }) is false) { throw new Exception(); }
+            if (stream.Signature(FootDataSignature) is false) { throw new Exception(); }
 
             return clipData;
         }
@@ -102,7 +110,7 @@ namespace net.rs64.MultiLayerImageParser.Clip
 
                             if (dataBlock.NotEmpty == 0)
                             {
-                                dataBlock.UnCompressedData = new byte[dataBlock.UnCompressedSize];
+                                dataBlock.CompressedDataAdders = default;
                                 dataBlockList.Add(dataBlock);
 
                                 var endBlockIDCharCount2 = dataBlockStream.ReadUInt32();
@@ -120,13 +128,8 @@ namespace net.rs64.MultiLayerImageParser.Clip
                             }
                             compressedDataBlockLength -= 4;
                             var compressedDataBlock = dataBlockStream.ReadSubSection((int)compressedDataBlockLength);
+                            dataBlock.CompressedDataAdders = compressedDataBlock.ReadToAddress();
 
-                            dataBlock.UnCompressedData = DecompressZlib(compressedDataBlock.ReadToArray());
-                            try { dataBlock.ConvertColorData(); }
-                            catch
-                            {
-                                // 例外は一旦 握りつぶします！！！
-                            }
 
                             var endBlockIDCharCount = dataBlockStream.ReadUInt32();
                             dataBlockStream.ReadToUTF16BE(endBlockIDCharCount * 2);// BlockDataEndChunk
@@ -164,9 +167,7 @@ namespace net.rs64.MultiLayerImageParser.Clip
     {
         public ulong FileSize;
         public List<ExtraData> CHNKExtaList;
-
-        [NonSerialized]
-        public byte[] SQLiteData;
+        public BinaryAddress SQLiteDataAdders;
     }
 
     [Serializable]
@@ -185,20 +186,18 @@ namespace net.rs64.MultiLayerImageParser.Clip
         public uint BlockHeight;
         public uint NotEmpty;
 
-        [NonSerialized]
-        public byte[] UnCompressedData;
-        [NonSerialized]
-        public Color32[] ColorData;
+        public BinaryAddress CompressedDataAdders;
 
-        public void ConvertColorData()
+        public Color32[] LoadColorData(byte[] clipBytes)
         {
+            var blockSpanStream = new BinarySectionStream(ClipLowLevelParser.DecompressZlib(new BinarySectionStream(clipBytes, CompressedDataAdders).ReadToArray()));
+
             var blockSize = new Vector2Int((int)BlockWidth, (int)BlockHeight);
             var blockLen = blockSize.x * blockSize.y;
             var pixelSize = 4;
 
             var colors = new Color32[blockLen];
 
-            var blockSpanStream = new BinarySectionStream(UnCompressedData);
 
             var alpStream = blockSpanStream.ReadSubSection(blockLen);
             var bgrStream = blockSpanStream.ReadSubSection(blockLen * pixelSize);
@@ -214,9 +213,35 @@ namespace net.rs64.MultiLayerImageParser.Clip
 
                 // if (bgrStream.Position == bgrStream.Length - 1) { Debug.Log("bgrStreamEnd!" + i); break; }
             }
-            ColorData = colors;
+            return colors;
         }
     }
 
+    public class Vector2Int
+    {
+        public int x;
+        public int y;
+
+        public Vector2Int(int blockWidth, int blockHeight)
+        {
+            this.x = blockWidth;
+            this.y = blockHeight;
+        }
+    }
+
+    public struct Color32
+    {
+        private byte r;
+        private byte g;
+        private byte b;
+        private byte v;
+
+        public Color32(byte r, byte g, byte b, byte v)
+        {
+            this.r = r;
+            this.g = g;
+            this.b = b;
+            this.v = v;
+        }
+    }
 }
-#endif

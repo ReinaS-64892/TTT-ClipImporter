@@ -1,0 +1,17 @@
+{
+    "name": "net.rs64.clip-parser",
+    "rootNamespace": "",
+    "references": [
+        "net.rs64.parser-utility",
+        "net.rs64.multi-layer-image-data"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": true
+}
