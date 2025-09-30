@@ -67,6 +67,20 @@ namespace net.rs64.TexTransTool.ClipParser
                         layersData.Add(lf);
 
                         WriteData(lf, cLayer);
+
+                        var maskMipMapID = cLayer.LayerLayerMaskMipmap;
+                        var maskOffscreenID = GetOffscreenID(maskMipMapID);
+                        if (maskOffscreenID is not null)
+                        {
+                            var data = GetExtraDataFromOffscreenID(maskOffscreenID.Value);
+                            if (data is not null)
+                                lf.LayerMask = new()
+                                {
+                                    LayerMaskDisabled = false,
+                                    MaskTexture = new ClipImportedRasterImageData(data)
+                                };
+                        }
+
                         GenerateLayerData(lf.Layers, cLayer);
                     }
                     else
@@ -75,30 +89,47 @@ namespace net.rs64.TexTransTool.ClipParser
                         layersData.Add(rasterLayerData);
                         WriteData(rasterLayerData, cLayer);
 
-                        var layerID = cLayer.MainId;
-                        var canvasID = cLayer.CanvasId;
-                        var offscreenID = GetOffscreenID(layerID, canvasID);
+                        var mipMapID = cLayer.LayerRenderMipmap;
+                        var offscreenID = GetOffscreenID(mipMapID);
+                        var maskMipMapID = cLayer.LayerLayerMaskMipmap;
+                        var maskOffscreenID = GetOffscreenID(maskMipMapID);
 
                         if (offscreenID is not null)
                         {
-                            var offscreenRecord = offscreen.First(o => o.MainId == offscreenID.Value);
-                            var externalId = Encoding.UTF8.GetString(offscreenRecord.BlockData);
-                            var data = extraData.FirstOrDefault(d => d.ExternalID == externalId);
+                            var data = GetExtraDataFromOffscreenID(offscreenID.Value);
                             if (data is not null)
                                 rasterLayerData.RasterTexture = new ClipImportedRasterImageData(data);
+                        }
+                        if (maskOffscreenID is not null)
+                        {
+                            var data = GetExtraDataFromOffscreenID(maskOffscreenID.Value);
+                            if (data is not null)
+                                rasterLayerData.LayerMask = new()
+                                {
+                                    LayerMaskDisabled = false,
+                                    MaskTexture = new ClipImportedRasterImageData(data)
+                                };
                         }
                     }
                     nextLayerIndex = cLayer.LayerNextIndex;
                 }
 
-                long? GetOffscreenID(long layerID, long canvasID)
+                long? GetOffscreenID(long mipMapID)
                 {
-                    var mipMap = mipmap.FirstOrDefault(m => m.CanvasId == canvasID && m.LayerId == layerID);
+                    var mipMap = mipmap.FirstOrDefault(m => m.MainId == mipMapID);
                     if (mipMap is null) { return null; }
                     var mipMapInfo = mipmapInfo.FirstOrDefault(m => m.MainId == mipMap.BaseMipmapInfo);
                     if (mipMapInfo is null) { return null; }
                     var offscreenID = mipMapInfo.Offscreen;
                     return offscreenID;
+                }
+
+                ExtraData GetExtraDataFromOffscreenID(long v)
+                {
+                    var offscreenRecord = offscreen.First(o => o.MainId == v);
+                    var externalId = Encoding.UTF8.GetString(offscreenRecord.BlockData);
+                    var data = extraData.FirstOrDefault(d => d.ExternalID == externalId);
+                    return data;
                 }
             }
         }

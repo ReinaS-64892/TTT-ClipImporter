@@ -188,32 +188,50 @@ namespace net.rs64.TexTransTool.ClipParser
 
         public BinaryAddress CompressedDataAdders;
 
-        public Color32[] LoadColorData(byte[] clipBytes)
+        public Color32[] LoadData(byte[] clipBytes)
         {
-            var blockSpanStream = new BinarySectionStream(ClipLowLevelParser.DecompressZlib(new BinarySectionStream(clipBytes, CompressedDataAdders).ReadToArray()));
+            var blockSpanStream = new BinarySectionStream(LoadDataToRaw(clipBytes));
 
             var blockSize = new Vector2Int((int)BlockWidth, (int)BlockHeight);
             var blockLen = blockSize.x * blockSize.y;
             var pixelSize = 4;
 
+
+
             var colors = new Color32[blockLen];
 
-
-            var alpStream = blockSpanStream.ReadSubSection(blockLen);
-            var bgrStream = blockSpanStream.ReadSubSection(blockLen * pixelSize);
-
-            for (int i = 0; colors.Length > i; i += 1)
+            switch (UnCompressedSize / blockLen)
             {
-                var b = bgrStream.ReadByte();
-                var g = bgrStream.ReadByte();
-                var r = bgrStream.ReadByte();
-                bgrStream.ReadByte();//謎のパディング
 
-                colors[i] = new Color32(r, g, b, alpStream.ReadByte());
+                default: return colors;
+                case 1:
+                    {
+                        var maskStream = blockSpanStream.ReadSubSection(blockLen);
+                        for (int i = 0; colors.Length > i; i += 1) { colors[i] = new Color32(0, 0, 0, maskStream.ReadByte()); }
+                        return colors;
+                    }
+                case 5:// なんと！ A と RGB +(Padding) って感じで詰められているので blockLen の 5倍のサイズ！！！
+                    {
+                        var alpStream = blockSpanStream.ReadSubSection(blockLen);
+                        var bgrStream = blockSpanStream.ReadSubSection(blockLen * pixelSize);
 
-                // if (bgrStream.Position == bgrStream.Length - 1) { Debug.Log("bgrStreamEnd!" + i); break; }
+                        for (int i = 0; colors.Length > i; i += 1)
+                        {
+                            var b = bgrStream.ReadByte();
+                            var g = bgrStream.ReadByte();
+                            var r = bgrStream.ReadByte();
+                            bgrStream.ReadByte();//謎のパディング
+
+                            colors[i] = new Color32(r, g, b, alpStream.ReadByte());
+                        }
+                        return colors;
+                    }
+
             }
-            return colors;
+        }
+        public byte[] LoadDataToRaw(byte[] clipBytes)
+        {
+            return ClipLowLevelParser.DecompressZlib(new BinarySectionStream(clipBytes, CompressedDataAdders).ReadToArray());
         }
     }
 

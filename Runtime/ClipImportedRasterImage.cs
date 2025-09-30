@@ -18,7 +18,7 @@ namespace net.rs64.TexTransTool.ClipImporter
             var firstData = ExtraData.DataArray.First();
             var blockSize = new Vector2Int((int)firstData.BlockWidth, (int)firstData.BlockHeight);
             var distentionSize = new Vector2Int(CanvasDescription.Width, CanvasDescription.Height);
-            var images = ExtraData.DataArray.Select(d => d.NotEmpty is not 0 ? d.LoadColorData(clipBinary) : new Color32[d.BlockHeight * d.BlockWidth]).ToArray();
+            var images = ExtraData.DataArray.Select(d => d.NotEmpty is not 0 ? d.LoadData(clipBinary) : new Color32[d.BlockHeight * d.BlockWidth]).ToArray();
 
             var distention = MemoryMarshal.Cast<byte, Color32>(writeTarget);
 
