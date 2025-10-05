@@ -2,6 +2,7 @@
 using System;
 using System.Linq;
 using System.Runtime.InteropServices;
+using net.rs64.TexTransCore;
 using net.rs64.TexTransTool.ClipParser;
 using net.rs64.TexTransTool.MultiLayerImage;
 
@@ -24,9 +25,19 @@ namespace net.rs64.TexTransTool.ClipImporter
 
             var blockWidthCount = distentionSize.x / blockSize.x;
             var blockHeightCount = distentionSize.y / blockSize.y;
+            var maxBlockCount = blockHeightCount * blockWidthCount;
 
             for (var i = 0; images.Length > i; i += 1)
             {
+                // なぜこんなものが必要なのか ... ?
+                // 4096 * 4096 のやつに対して block の大きさ 256 * 256 で images が 306個ぐらい出てくるやつが存在し謎
+                // これは workaround ... けどなぜなのだろうか ... ?
+                if (i >= maxBlockCount)
+                {
+                    // メインスレッド外で呼ばれうるからこれ使えねーんだけど！！！！
+                    // TTLog.Warning("謎のキャンバスサイズよりも大きいやつが存在するよ〜！なにこれ〜！！！！");
+                    break;
+                }
                 var rawBrockImage = images[i].AsSpan();
 
                 var blockPosition = new Vector2Int(i % blockWidthCount, i / blockHeightCount);
