@@ -1,0 +1,39 @@
+name: CreateZip
+on:
+  workflow_call:
+    inputs:
+      tag:
+        type: string
+        required: false
+  workflow_dispatch:
+    inputs:
+      tag:
+        type: string
+        required: false
+
+jobs:
+    Create-Zip:
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v4
+          with:
+            fetch-tags: true
+            ref: ${{ inputs.tag }}
+
+        - uses: actions/setup-dotnet@v4
+
+        - name: create zip
+          env:
+            TAG: ${{ inputs.tag }}
+          run: |
+            cd .github/CreateZip
+            dotnet run
+
+            cd ../../
+            mv ttt-clip-importer.zip ttt-clip-importer-$TAG.zip
+
+
+        - uses: actions/upload-artifact@v4
+          with:
+            name: ttt-clip-importer
+            path: ttt-clip-importer-${{ inputs.tag }}.zip
